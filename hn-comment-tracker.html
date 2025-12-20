@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HN Comment Tracker</title>
+    <meta name="description" content="Track new Hacker News comments for a post ID and highlight the updates." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500,700&family=JetBrains+Mono:wght@400;500&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: only light;
+        --bg: #f5f1ea;
+        --bg-deep: #f0e6d8;
+        --ink: #1f1c17;
+        --muted: #5c5148;
+        --card: #fffaf2;
+        --accent: #c1542c;
+        --accent-2: #305f72;
+        --line: #eadccc;
+        --highlight: #fff1cf;
+        --shadow: 0 22px 48px rgba(31, 28, 23, 0.18);
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Work Sans", system-ui, sans-serif;
+        background:
+          radial-gradient(circle at 15% 20%, rgba(193, 84, 44, 0.22), transparent 42%),
+          radial-gradient(circle at 80% 10%, rgba(48, 95, 114, 0.2), transparent 36%),
+          linear-gradient(135deg, var(--bg), var(--bg-deep));
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 48px 20px 70px;
+      }
+
+      header {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .title {
+        font-family: "Fraunces", "Times New Roman", serif;
+        font-size: clamp(2.2rem, 3vw, 3.2rem);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        max-width: 660px;
+        font-size: 1.04rem;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        font-size: 1rem;
+        background: #fffdf8;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary {
+        background: #fff;
+        border: 1px solid var(--line);
+      }
+
+      .ghost {
+        background: transparent;
+        border: 1px dashed var(--line);
+        color: var(--muted);
+      }
+
+      .status {
+        margin-top: 14px;
+        color: var(--muted);
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 12px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .stats span {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .results {
+        margin-top: 22px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .story {
+        display: grid;
+        gap: 6px;
+      }
+
+      .story a {
+        color: var(--accent-2);
+        text-decoration: none;
+      }
+
+      .story a:hover {
+        text-decoration: underline;
+      }
+
+      .comment {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        background: #fffdf8;
+        display: grid;
+        gap: 10px;
+        position: relative;
+        margin-left: calc(var(--depth) * 18px);
+        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        animation: floatIn 0.35s ease both;
+      }
+
+      .comment.new {
+        background: var(--highlight);
+        border-color: #f0b24d;
+        box-shadow: 0 12px 30px rgba(240, 178, 77, 0.3);
+      }
+
+      .comment-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .comment-meta a {
+        color: var(--accent-2);
+        text-decoration: none;
+      }
+
+      .comment-meta a:hover {
+        text-decoration: underline;
+      }
+
+      .badge {
+        background: var(--accent);
+        color: #fff;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .comment-body {
+        line-height: 1.5;
+      }
+
+      .comment-body p {
+        margin: 0 0 8px;
+      }
+
+      .comment-body p:last-child {
+        margin-bottom: 0;
+      }
+
+      .comment-body code,
+      .comment-body pre {
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      .comment-body pre {
+        background: #f4efe5;
+        padding: 10px 12px;
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+
+      .divider {
+        height: 1px;
+        background: var(--line);
+        margin: 12px 0 6px;
+      }
+
+      @keyframes floatIn {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 700px) {
+        .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        button {
+          width: 100%;
+        }
+
+        .comment {
+          margin-left: calc(var(--depth) * 10px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="title">HN Comment Tracker</div>
+        <div class="subtitle">
+          Track a Hacker News post by ID. The tool stores the last seen comment IDs locally and highlights new ones on
+          your next check.
+        </div>
+        <div class="pill-row">
+          <div class="pill">LocalStorage snapshots</div>
+          <div class="pill">No uploads</div>
+          <div class="pill">Highlight new comments</div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="controls">
+          <div style="flex: 1 1 240px;">
+            <label for="postId">Hacker News post ID</label>
+            <input id="postId" type="text" inputmode="numeric" placeholder="e.g. 39485725" />
+          </div>
+          <button class="primary" id="checkBtn">Check comments</button>
+          <button class="secondary" id="clearBtn">Clear saved snapshot</button>
+        </div>
+        <div class="status" id="status">Enter a post ID to begin.</div>
+        <div class="stats" id="stats">
+          <div>Total comments: <span id="totalCount">0</span></div>
+          <div>New comments: <span id="newCount">0</span></div>
+          <div>Last checked: <span id="lastChecked">Never</span></div>
+        </div>
+        <div class="results" id="results"></div>
+      </section>
+    </div>
+
+    <script>
+      const postIdInput = document.getElementById("postId");
+      const checkBtn = document.getElementById("checkBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const statusEl = document.getElementById("status");
+      const totalCountEl = document.getElementById("totalCount");
+      const newCountEl = document.getElementById("newCount");
+      const lastCheckedEl = document.getElementById("lastChecked");
+      const resultsEl = document.getElementById("results");
+
+      const storageKey = "hnCommentTracker.snapshots.v1";
+      const lastIdKey = "hnCommentTracker.lastId";
+      const apiBase = "https://hacker-news.firebaseio.com/v0";
+      const allowedTags = new Set([
+        "P",
+        "A",
+        "PRE",
+        "CODE",
+        "EM",
+        "STRONG",
+        "I",
+        "B",
+        "UL",
+        "OL",
+        "LI",
+        "BLOCKQUOTE",
+        "BR",
+      ]);
+
+      function setStatus(message, tone = "") {
+        statusEl.textContent = message;
+        statusEl.style.color = tone === "error" ? "#b12720" : "";
+      }
+
+      function loadSnapshots() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function saveSnapshots(data) {
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      function formatTime(timestamp) {
+        if (!timestamp) return "Never";
+        return new Date(timestamp).toLocaleString();
+      }
+
+      function sanitizeHtml(html) {
+        if (!html) return "";
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const walker = document.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
+        const toRemove = [];
+        while (walker.nextNode()) {
+          const el = walker.currentNode;
+          if (!allowedTags.has(el.tagName)) {
+            toRemove.push(el);
+            continue;
+          }
+          for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (el.tagName === "A" && name === "href") {
+              if (!attr.value.startsWith("http")) {
+                el.removeAttribute(attr.name);
+              }
+            } else if (name !== "title") {
+              el.removeAttribute(attr.name);
+            }
+          }
+          if (el.tagName === "A") {
+            el.setAttribute("rel", "noopener noreferrer");
+            el.setAttribute("target", "_blank");
+          }
+        }
+        for (const node of toRemove) {
+          const parent = node.parentNode;
+          if (!parent) continue;
+          while (node.firstChild) {
+            parent.insertBefore(node.firstChild, node);
+          }
+          parent.removeChild(node);
+        }
+        return doc.body.innerHTML.trim();
+      }
+
+      function createElement(tag, className, html) {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        if (html !== undefined) el.innerHTML = html;
+        return el;
+      }
+
+      async function fetchItem(id) {
+        const response = await fetch(`${apiBase}/item/${id}.json`);
+        if (!response.ok) {
+          throw new Error(`HN API returned ${response.status}`);
+        }
+        return response.json();
+      }
+
+      async function fetchCommentMap(rootIds) {
+        const queue = [...rootIds];
+        const items = new Map();
+        const concurrency = 8;
+
+        async function worker() {
+          while (queue.length) {
+            const id = queue.shift();
+            if (!id || items.has(id)) continue;
+            try {
+              const item = await fetchItem(id);
+              if (!item || item.deleted || item.dead) {
+                items.set(id, null);
+                continue;
+              }
+              items.set(id, item);
+              if (Array.isArray(item.kids)) {
+                queue.push(...item.kids);
+              }
+            } catch (error) {
+              items.set(id, null);
+            }
+          }
+        }
+
+        const workers = Array.from({ length: Math.min(concurrency, queue.length || 1) }, () => worker());
+        await Promise.all(workers);
+        return items;
+      }
+
+      function renderStory(story) {
+        const storyEl = createElement("div", "story");
+        const title = story.title || "(Untitled)";
+        const hnLink = `https://news.ycombinator.com/item?id=${story.id}`;
+        const titleLine = createElement(
+          "div",
+          "",
+          `<strong>${title}</strong> <a href="${hnLink}" target="_blank" rel="noopener noreferrer">Open on HN</a>`
+        );
+        const metaLine = createElement(
+          "div",
+          "comment-meta",
+          `by ${story.by || "unknown"} · ${new Date(story.time * 1000).toLocaleString()}`
+        );
+        storyEl.append(titleLine, metaLine);
+        return storyEl;
+      }
+
+      function renderComments(rootIds, items, newIds) {
+        const fragment = document.createDocumentFragment();
+
+        function renderNode(id, depth) {
+          const item = items.get(id);
+          if (!item) return;
+          const commentEl = createElement("div", "comment");
+          commentEl.style.setProperty("--depth", depth.toString());
+          if (newIds.has(id)) {
+            commentEl.classList.add("new");
+          }
+          const meta = createElement(
+            "div",
+            "comment-meta",
+            `by ${item.by || "unknown"} · ${new Date(item.time * 1000).toLocaleString()} · `
+          );
+          const link = createElement("a");
+          link.href = `https://news.ycombinator.com/item?id=${item.id}`;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Permalink";
+          meta.appendChild(link);
+          if (newIds.has(id)) {
+            const badge = createElement("span", "badge", "New");
+            meta.appendChild(badge);
+          }
+          const bodyHtml = sanitizeHtml(item.text || "");
+          const body = createElement("div", "comment-body", bodyHtml || "<em>No text</em>");
+          commentEl.append(meta, body);
+          fragment.appendChild(commentEl);
+          if (Array.isArray(item.kids)) {
+            item.kids.forEach((childId) => renderNode(childId, depth + 1));
+          }
+        }
+
+        rootIds.forEach((id) => renderNode(id, 0));
+        return fragment;
+      }
+
+      function updateStats(total, newCount, lastChecked) {
+        totalCountEl.textContent = total.toString();
+        newCountEl.textContent = newCount.toString();
+        lastCheckedEl.textContent = formatTime(lastChecked);
+      }
+
+      function syncStateToUrl(postId) {
+        const url = new URL(window.location);
+        if (postId) {
+          url.searchParams.set("id", postId);
+        } else {
+          url.searchParams.delete("id");
+        }
+        history.replaceState({}, "", url);
+      }
+
+      async function handleCheck() {
+        const postId = postIdInput.value.trim();
+        if (!postId || !/^\d+$/.test(postId)) {
+          setStatus("Enter a valid numeric post ID.", "error");
+          return;
+        }
+
+        setStatus("Loading post and comments...");
+        resultsEl.innerHTML = "";
+        checkBtn.disabled = true;
+        checkBtn.textContent = "Checking...";
+
+        try {
+          const story = await fetchItem(postId);
+          if (!story || !story.id) {
+            throw new Error("Post not found.");
+          }
+
+          const rootIds = Array.isArray(story.kids) ? story.kids : [];
+          const items = await fetchCommentMap(rootIds);
+          const commentIds = Array.from(items.keys()).filter((id) => items.get(id));
+          const snapshots = loadSnapshots();
+          const snapshot = snapshots[postId];
+          const seenIds = new Set(snapshot && Array.isArray(snapshot.seen) ? snapshot.seen : []);
+          const currentIds = new Set(commentIds);
+          const newIds = new Set();
+
+          if (snapshot) {
+            currentIds.forEach((id) => {
+              if (!seenIds.has(id)) {
+                newIds.add(id);
+              }
+            });
+          }
+
+          const lastChecked = Date.now();
+          snapshots[postId] = { seen: Array.from(currentIds), lastChecked };
+          saveSnapshots(snapshots);
+          localStorage.setItem(lastIdKey, postId);
+          syncStateToUrl(postId);
+
+          resultsEl.append(renderStory(story));
+          if (rootIds.length) {
+            const divider = createElement("div", "divider");
+            resultsEl.appendChild(divider);
+            resultsEl.appendChild(renderComments(rootIds, items, newIds));
+          } else {
+            resultsEl.appendChild(createElement("div", "comment-body", "<em>No comments yet.</em>"));
+          }
+
+          updateStats(commentIds.length, newIds.size, lastChecked);
+          if (!snapshot) {
+            setStatus("Snapshot saved. Check again later to highlight new comments.");
+          } else if (newIds.size) {
+            setStatus(`Found ${newIds.size} new comment${newIds.size === 1 ? "" : "s"}.`);
+          } else {
+            setStatus("No new comments since last check.");
+          }
+        } catch (error) {
+          setStatus(error.message || "Unable to load comments.", "error");
+          updateStats(0, 0, null);
+        } finally {
+          checkBtn.disabled = false;
+          checkBtn.textContent = "Check comments";
+        }
+      }
+
+      function handleClear() {
+        const postId = postIdInput.value.trim();
+        if (!postId) {
+          setStatus("Enter a post ID to clear.", "error");
+          return;
+        }
+        const snapshots = loadSnapshots();
+        if (snapshots[postId]) {
+          delete snapshots[postId];
+          saveSnapshots(snapshots);
+          setStatus("Saved snapshot cleared for this post.");
+        } else {
+          setStatus("No saved snapshot for this post.");
+        }
+        updateStats(0, 0, null);
+      }
+
+      function loadState() {
+        const params = new URLSearchParams(window.location.search);
+        const fromUrl = params.get("id");
+        const lastId = localStorage.getItem(lastIdKey);
+        postIdInput.value = fromUrl || lastId || "";
+        const snapshots = loadSnapshots();
+        if (postIdInput.value && snapshots[postIdInput.value]) {
+          lastCheckedEl.textContent = formatTime(snapshots[postIdInput.value].lastChecked);
+        }
+      }
+
+      checkBtn.addEventListener("click", handleCheck);
+      clearBtn.addEventListener("click", handleClear);
+      postIdInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          handleCheck();
+        }
+      });
+
+      loadState();
+    </script>
+  </body>
+</html>
