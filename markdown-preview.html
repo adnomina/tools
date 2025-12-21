@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markdown Preview Studio</title>
+    <meta name="description" content="Paste Markdown or load a file to preview it in a GitHub-style renderer." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fira+Mono:wght@400;500&family=Yeseva+One&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.6.1/github-markdown.min.css"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5efe6;
+        --bg-deep: #e9ddd0;
+        --ink: #211d18;
+        --muted: #6e6256;
+        --card: #fffaf4;
+        --accent: #1f5d5b;
+        --accent-2: #c95731;
+        --line: #e6d4c1;
+        --shadow: 0 24px 55px rgba(33, 29, 24, 0.2);
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Archivo", system-ui, sans-serif;
+        background:
+          radial-gradient(circle at 18% 15%, rgba(31, 93, 91, 0.18), transparent 48%),
+          radial-gradient(circle at 85% 12%, rgba(201, 87, 49, 0.16), transparent 42%),
+          linear-gradient(135deg, var(--bg), var(--bg-deep));
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 44px 20px 70px;
+      }
+
+      header {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .title {
+        font-family: "Yeseva One", "Times New Roman", serif;
+        font-size: clamp(2.3rem, 3.2vw, 3.3rem);
+        letter-spacing: 0.01em;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        max-width: 720px;
+        font-size: 1.05rem;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .header-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 6px;
+      }
+
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        background: rgba(255, 255, 255, 0.65);
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+        letter-spacing: 0.01em;
+      }
+
+      .helper {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      label {
+        font-weight: 600;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-chip {
+        border: 1px dashed var(--line);
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 0.9rem;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 360px;
+        resize: vertical;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #fffdf9;
+        font-family: "Fira Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 9px 16px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary {
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink);
+      }
+
+      .ghost {
+        background: transparent;
+        border: 1px dashed var(--line);
+        color: var(--muted);
+      }
+
+      .status {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      .stats span {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .preview-shell {
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        padding: 16px;
+        background: #ffffff;
+        min-height: 360px;
+        overflow: auto;
+      }
+
+      .preview-shell .markdown-body {
+        font-size: 0.98rem;
+        line-height: 1.6;
+        color: #1f2328;
+        background: #ffffff;
+      }
+
+      :root[data-theme="dark"] {
+        --bg: #1a1714;
+        --bg-deep: #0f0d0b;
+        --ink: #f1ece6;
+        --muted: #b0a397;
+        --card: #221e1a;
+        --accent: #4bb7b0;
+        --accent-2: #f08a5b;
+        --line: #3a322b;
+        --shadow: 0 24px 55px rgba(0, 0, 0, 0.5);
+      }
+
+      :root[data-theme="dark"] body {
+        background:
+          radial-gradient(circle at 18% 15%, rgba(75, 183, 176, 0.15), transparent 48%),
+          radial-gradient(circle at 85% 12%, rgba(240, 138, 91, 0.15), transparent 42%),
+          linear-gradient(135deg, var(--bg), var(--bg-deep));
+      }
+
+      :root[data-theme="dark"] .panel {
+        background: var(--card);
+        border-color: var(--line);
+      }
+
+      :root[data-theme="dark"] textarea {
+        background: #1c1814;
+        color: var(--ink);
+      }
+
+      :root[data-theme="dark"] .file-chip {
+        background: #1c1814;
+      }
+
+      :root[data-theme="dark"] .secondary {
+        background: #1c1814;
+        color: var(--ink);
+      }
+
+      :root[data-theme="dark"] .pill {
+        background: rgba(22, 19, 16, 0.85);
+        border-color: #3a322b;
+        color: #d6cbbf;
+      }
+
+      :root[data-theme="dark"] .preview-shell {
+        background: #0f1115;
+        border-color: #2d333b;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body {
+        background: #0f1115;
+        color: #e6edf3;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body a {
+        color: #58a6ff;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body pre,
+      :root[data-theme="dark"] .preview-shell .markdown-body code {
+        background: #161b22;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body table tr {
+        background: #0f1115;
+        border-top: 1px solid #30363d;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body table tr:nth-child(2n) {
+        background: #161b22;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body table th,
+      :root[data-theme="dark"] .preview-shell .markdown-body table td {
+        border: 1px solid #30363d;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body blockquote {
+        color: #9aa4af;
+        border-left-color: #3a4048;
+      }
+
+      :root[data-theme="dark"] .preview-shell .markdown-body hr {
+        background-color: #30363d;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --bg: #1a1714;
+          --bg-deep: #0f0d0b;
+          --ink: #f1ece6;
+          --muted: #b0a397;
+          --card: #221e1a;
+          --accent: #4bb7b0;
+          --accent-2: #f08a5b;
+          --line: #3a322b;
+          --shadow: 0 24px 55px rgba(0, 0, 0, 0.5);
+        }
+
+        :root:not([data-theme]) body {
+          background:
+            radial-gradient(circle at 18% 15%, rgba(75, 183, 176, 0.15), transparent 48%),
+            radial-gradient(circle at 85% 12%, rgba(240, 138, 91, 0.15), transparent 42%),
+            linear-gradient(135deg, var(--bg), var(--bg-deep));
+        }
+
+        :root:not([data-theme]) .panel {
+          background: var(--card);
+          border-color: var(--line);
+        }
+
+        :root:not([data-theme]) textarea {
+          background: #1c1814;
+          color: var(--ink);
+        }
+
+        :root:not([data-theme]) .file-chip {
+          background: #1c1814;
+        }
+
+        :root:not([data-theme]) .secondary {
+          background: #1c1814;
+          color: var(--ink);
+        }
+
+        :root:not([data-theme]) .pill {
+          background: rgba(22, 19, 16, 0.85);
+          border-color: #3a322b;
+          color: #d6cbbf;
+        }
+
+        :root:not([data-theme]) .preview-shell {
+          background: #0f1115;
+          border-color: #2d333b;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body {
+          background: #0f1115;
+          color: #e6edf3;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body a {
+          color: #58a6ff;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body pre,
+        :root:not([data-theme]) .preview-shell .markdown-body code {
+          background: #161b22;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body table tr {
+          background: #0f1115;
+          border-top: 1px solid #30363d;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body table tr:nth-child(2n) {
+          background: #161b22;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body table th,
+        :root:not([data-theme]) .preview-shell .markdown-body table td {
+          border: 1px solid #30363d;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body blockquote {
+          color: #9aa4af;
+          border-left-color: #3a4048;
+        }
+
+        :root:not([data-theme]) .preview-shell .markdown-body hr {
+          background-color: #30363d;
+        }
+      }
+
+      .preview-shell .markdown-body pre,
+      .preview-shell .markdown-body code {
+        font-family: "Fira Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      .preview-shell .markdown-body table tr {
+        background: #ffffff;
+        border-top: 1px solid #d0d7de;
+      }
+
+      .preview-shell .markdown-body table tr:nth-child(2n) {
+        background: #f6f8fa;
+      }
+
+      .preview-shell .markdown-body table th,
+      .preview-shell .markdown-body table td {
+        border: 1px solid #d0d7de;
+      }
+
+      .notice {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-top: 12px;
+      }
+
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        textarea,
+        .preview-shell {
+          min-height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="title">Markdown Preview Studio</div>
+        <div class="subtitle">
+          Paste Markdown or drop in a file to see a GitHub-style preview. Shareable links keep the content in the URL.
+        </div>
+        <div class="pill-row">
+          <div class="pill">GitHub-flavored renderer</div>
+          <div class="pill">Clipboard friendly</div>
+          <div class="pill">No uploads</div>
+        </div>
+        <div class="header-actions">
+          <button class="secondary" id="themeToggleBtn" type="button">Theme: System</button>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="grid">
+          <div>
+            <h2>Markdown input</h2>
+            <div class="helper">Load a file or paste Markdown. Changes render automatically.</div>
+            <div class="controls">
+              <label class="secondary" for="fileInput" style="padding: 9px 16px; border-radius: 999px; cursor: pointer;">
+                Load file
+              </label>
+              <input id="fileInput" type="file" accept=".md,.markdown,text/markdown,text/plain" />
+              <button class="secondary" id="sampleBtn" type="button">Sample</button>
+              <button class="ghost" id="clearBtn" type="button">Clear</button>
+              <div class="file-chip" id="fileName">No file selected</div>
+            </div>
+            <textarea id="markdownInput" placeholder="# Paste Markdown here..."></textarea>
+            <div class="stats" id="stats">
+              <div>Words: <span id="wordCount">0</span></div>
+              <div>Characters: <span id="charCount">0</span></div>
+              <div>Lines: <span id="lineCount">0</span></div>
+            </div>
+            <div class="status" id="status" aria-live="polite">Waiting for Markdown input.</div>
+          </div>
+          <div>
+            <h2>Preview</h2>
+            <div class="helper">Rendered safely with a GitHub-style theme.</div>
+            <div class="controls">
+              <button class="primary" id="copyMdBtn" type="button">Copy Markdown</button>
+            </div>
+            <div class="preview-shell">
+              <article id="preview" class="markdown-body"></article>
+            </div>
+            <div class="notice">Tip: Use the URL hash to share a rendered draft with someone.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script>
+      const markdownInput = document.getElementById("markdownInput");
+      const preview = document.getElementById("preview");
+      const statusEl = document.getElementById("status");
+      const wordCountEl = document.getElementById("wordCount");
+      const charCountEl = document.getElementById("charCount");
+      const lineCountEl = document.getElementById("lineCount");
+      const fileInput = document.getElementById("fileInput");
+      const fileName = document.getElementById("fileName");
+      const copyMdBtn = document.getElementById("copyMdBtn");
+      const sampleBtn = document.getElementById("sampleBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const themeToggleBtn = document.getElementById("themeToggleBtn");
+
+      const storageKey = "markdownPreview.input.v1";
+      const themeKey = "markdownPreview.theme.v1";
+      const urlKey = "md";
+
+      const renderer = new marked.Renderer();
+      renderer.link = function (href, title, text) {
+        const safeHref = href || "";
+        const titleAttr = title ? ` title=\"${title}\"` : "";
+        const isExternal = safeHref.startsWith("http");
+        const rel = isExternal ? " rel=\"noopener noreferrer\"" : "";
+        const target = isExternal ? " target=\"_blank\"" : "";
+        return `<a href=\"${safeHref}\"${titleAttr}${target}${rel}>${text}</a>`;
+      };
+
+      marked.setOptions({
+        gfm: true,
+        breaks: false,
+        mangle: false,
+        headerIds: false,
+        renderer,
+      });
+
+      function toBase64(text) {
+        const bytes = new TextEncoder().encode(text);
+        let binary = "";
+        bytes.forEach((byte) => {
+          binary += String.fromCharCode(byte);
+        });
+        return btoa(binary);
+      }
+
+      function fromBase64(base64) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+      }
+
+      function syncToUrl(text) {
+        const url = new URL(window.location);
+        if (!text) {
+          url.hash = "";
+          history.replaceState({}, "", url);
+          return;
+        }
+        const encoded = encodeURIComponent(toBase64(text));
+        url.hash = `${urlKey}=${encoded}`;
+        history.replaceState({}, "", url);
+      }
+
+      function readFromUrl() {
+        const hash = window.location.hash.replace(/^#/, "");
+        if (!hash) return "";
+        const params = new URLSearchParams(hash);
+        const encoded = params.get(urlKey);
+        if (!encoded) return "";
+        try {
+          return fromBase64(decodeURIComponent(encoded));
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function updateStatus(message, tone = "") {
+        statusEl.textContent = message;
+        statusEl.style.color = tone === "error" ? "#b12720" : "";
+      }
+
+      function updateStats(text) {
+        const trimmed = text.trim();
+        const words = trimmed ? trimmed.split(/\s+/).length : 0;
+        const lines = text ? text.split(/\n/).length : 0;
+        wordCountEl.textContent = words.toString();
+        charCountEl.textContent = text.length.toString();
+        lineCountEl.textContent = lines.toString();
+      }
+
+      function sanitizeHtml(html) {
+        if (window.DOMPurify) {
+          return DOMPurify.sanitize(html, { ADD_ATTR: ["target", "rel"] });
+        }
+        return html;
+      }
+
+      function renderMarkdown(source) {
+        const raw = marked.parse(source || "");
+        const safe = sanitizeHtml(raw);
+        preview.innerHTML = safe || "<p><em>No content yet.</em></p>";
+        updateStats(source);
+        updateStatus(source.trim() ? "Preview updated." : "Waiting for Markdown input.");
+      }
+
+      let renderTimer;
+      function scheduleRender() {
+        const value = markdownInput.value;
+        clearTimeout(renderTimer);
+        renderTimer = setTimeout(() => {
+          renderMarkdown(value);
+          localStorage.setItem(storageKey, value);
+          syncToUrl(value);
+        }, 160);
+      }
+
+      function setMarkdown(value) {
+        markdownInput.value = value;
+        renderMarkdown(value);
+        localStorage.setItem(storageKey, value);
+        syncToUrl(value);
+      }
+
+      function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        fileName.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = () => {
+          setMarkdown(String(reader.result || ""));
+          updateStatus(`Loaded ${file.name}.`);
+        };
+        reader.onerror = () => {
+          updateStatus("Unable to read file.", "error");
+        };
+        reader.readAsText(file);
+      }
+
+      async function copyMarkdown() {
+        const text = markdownInput.value;
+        try {
+          await navigator.clipboard.writeText(text);
+          updateStatus("Markdown copied to clipboard.");
+        } catch (error) {
+          updateStatus("Clipboard access was blocked.", "error");
+        }
+      }
+
+      function loadSample() {
+        const sample = `# Markdown Preview Studio\n\nPaste your Markdown on the left to see a GitHub-style preview on the right.\n\n## What it handles\n\n- **Headers, lists, and tables**\n- \`inline code\` and fenced blocks\n- Blockquotes and callouts\n\n> Tip: Share a draft by copying the URL hash.\n\n\`\`\`js\nconst idea = "Preview instantly";\nconsole.log(idea);\n\`\`\`\n\n| Feature | Status |\n| --- | --- |\n| GitHub-style CSS | Ready |\n| Clipboard helpers | Ready |\n\n[Visit GitHub](https://github.com)\n`;
+        setMarkdown(sample);
+        updateStatus("Sample loaded.");
+      }
+
+      function clearAll() {
+        setMarkdown("");
+        fileInput.value = "";
+        fileName.textContent = "No file selected";
+        updateStatus("Cleared.");
+      }
+
+      function applyTheme(pref) {
+        if (pref === "light" || pref === "dark") {
+          document.documentElement.setAttribute("data-theme", pref);
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+        }
+        const label = pref === "light" ? "Light" : pref === "dark" ? "Dark" : "System";
+        themeToggleBtn.textContent = `Theme: ${label}`;
+      }
+
+      function cycleTheme() {
+        const current = localStorage.getItem(themeKey) || "system";
+        const next = current === "system" ? "light" : current === "light" ? "dark" : "system";
+        localStorage.setItem(themeKey, next);
+        applyTheme(next);
+        updateStatus(`Theme set to ${next}.`);
+      }
+
+      function loadInitialState() {
+        const fromUrl = readFromUrl();
+        if (fromUrl) {
+          setMarkdown(fromUrl);
+          updateStatus("Loaded from URL.");
+          return;
+        }
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          setMarkdown(saved);
+          updateStatus("Restored from local storage.");
+          return;
+        }
+        renderMarkdown("");
+      }
+
+      markdownInput.addEventListener("input", scheduleRender);
+      fileInput.addEventListener("change", handleFile);
+      copyMdBtn.addEventListener("click", copyMarkdown);
+      sampleBtn.addEventListener("click", loadSample);
+      clearBtn.addEventListener("click", clearAll);
+      themeToggleBtn.addEventListener("click", cycleTheme);
+
+      applyTheme(localStorage.getItem(themeKey) || "system");
+      loadInitialState();
+    </script>
+  </body>
+</html>
