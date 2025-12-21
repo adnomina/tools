@@ -159,6 +159,36 @@
         font-weight: 600;
       }
 
+      .history {
+        margin-top: 16px;
+      }
+
+      .history h3 {
+        margin: 0 0 8px;
+        font-size: 0.95rem;
+        color: var(--muted);
+        letter-spacing: 0.01em;
+      }
+
+      .history-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .history-list button {
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink);
+        padding: 6px 12px;
+        font-size: 0.9rem;
+      }
+
+      .history-empty {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
       .results {
         margin-top: 22px;
         display: grid;
@@ -312,6 +342,10 @@
           <div>New comments: <span id="newCount">0</span></div>
           <div>Last checked: <span id="lastChecked">Never</span></div>
         </div>
+        <div class="history" id="history">
+          <h3>Recent post IDs</h3>
+          <div class="history-list" id="historyList"></div>
+        </div>
         <div class="results" id="results"></div>
       </section>
     </div>
@@ -325,9 +359,11 @@
       const newCountEl = document.getElementById("newCount");
       const lastCheckedEl = document.getElementById("lastChecked");
       const resultsEl = document.getElementById("results");
+      const historyListEl = document.getElementById("historyList");
 
       const storageKey = "hnCommentTracker.snapshots.v1";
       const lastIdKey = "hnCommentTracker.lastId";
+      const historyKey = "hnCommentTracker.history.v1";
       const apiBase = "https://hacker-news.firebaseio.com/v0";
       const allowedTags = new Set([
         "P",
@@ -361,6 +397,44 @@
 
       function saveSnapshots(data) {
         localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      function loadHistory() {
+        try {
+          const raw = localStorage.getItem(historyKey);
+          return raw ? JSON.parse(raw) : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      function saveHistory(history) {
+        localStorage.setItem(historyKey, JSON.stringify(history));
+      }
+
+      function renderHistory(history) {
+        historyListEl.innerHTML = "";
+        if (!history.length) {
+          historyListEl.appendChild(createElement("div", "history-empty", "No recent post IDs yet."));
+          return;
+        }
+        history.forEach((id) => {
+          const button = createElement("button", "", id);
+          button.type = "button";
+          button.addEventListener("click", () => {
+            postIdInput.value = id;
+            handleCheck();
+          });
+          historyListEl.appendChild(button);
+        });
+      }
+
+      function recordHistory(postId) {
+        const history = loadHistory().filter((id) => id !== postId);
+        history.unshift(postId);
+        const trimmed = history.slice(0, 12);
+        saveHistory(trimmed);
+        renderHistory(trimmed);
       }
 
       function formatTime(timestamp) {
@@ -562,6 +636,7 @@
           snapshots[postId] = { seen: Array.from(currentIds), lastChecked };
           saveSnapshots(snapshots);
           localStorage.setItem(lastIdKey, postId);
+          recordHistory(postId);
           syncStateToUrl(postId);
 
           resultsEl.append(renderStory(story));
@@ -616,6 +691,7 @@
         if (postIdInput.value && snapshots[postIdInput.value]) {
           lastCheckedEl.textContent = formatTime(snapshots[postIdInput.value].lastChecked);
         }
+        renderHistory(loadHistory());
       }
 
       checkBtn.addEventListener("click", handleCheck);
