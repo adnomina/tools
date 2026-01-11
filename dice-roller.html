@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dice Roller</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5efe2;
+      --bg-top: #fff4dc;
+      --bg-bottom: #efe4d4;
+      --ink: #1e1b16;
+      --muted: #6a5f53;
+      --accent: #f4599d;
+      --accent-dark: #d94a89;
+      --card: #fff8ec;
+      --shadow: rgba(30, 27, 22, 0.12);
+      --dice: #fff;
+      --dice-face: #fffdf7;
+      --history: #fff6e7;
+      --surface-outline: rgba(30, 27, 22, 0.06);
+      --pip: #1e1b16;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #15110b;
+        --bg-top: #221a13;
+        --bg-bottom: #0f0c08;
+        --ink: #f8f1e4;
+        --muted: #c1b7a8;
+        --accent: #f4599d;
+        --accent-dark: #d94a89;
+        --card: #1f1913;
+        --shadow: rgba(0, 0, 0, 0.45);
+        --dice: #221b14;
+        --dice-face: #1a140f;
+        --history: #231c15;
+        --surface-outline: rgba(248, 241, 228, 0.08);
+        --pip: #f8f1e4;
+      }
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f5efe2;
+      --bg-top: #fff4dc;
+      --bg-bottom: #efe4d4;
+      --ink: #1e1b16;
+      --muted: #6a5f53;
+      --accent: #f4599d;
+      --accent-dark: #d94a89;
+      --card: #fff8ec;
+      --shadow: rgba(30, 27, 22, 0.12);
+      --dice: #fff;
+      --dice-face: #fffdf7;
+      --history: #fff6e7;
+      --surface-outline: rgba(30, 27, 22, 0.06);
+      --pip: #1e1b16;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #15110b;
+      --bg-top: #221a13;
+      --bg-bottom: #0f0c08;
+      --ink: #f8f1e4;
+      --muted: #c1b7a8;
+      --accent: #f4599d;
+      --accent-dark: #d94a89;
+      --card: #1f1913;
+      --shadow: rgba(0, 0, 0, 0.45);
+      --dice: #221b14;
+      --dice-face: #1a140f;
+      --history: #231c15;
+      --surface-outline: rgba(248, 241, 228, 0.08);
+      --pip: #f8f1e4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .noto-sans-regular {
+      font-family: "Noto Sans", system-ui;
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: inherit;
+      color: var(--ink);
+      background: radial-gradient(circle at top, var(--bg-top) 0%, var(--bg) 45%, var(--bg-bottom) 100%);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(120deg, rgba(255, 255, 255, 0.08) 0px, rgba(255, 255, 255, 0.08) 2px, transparent 2px, transparent 10px),
+        repeating-linear-gradient(300deg, rgba(0, 0, 0, 0.03) 0px, rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 8px);
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    main {
+      position: relative;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+    }
+
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 3vw, 2.6rem);
+      margin: 0 0 8px 0;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 560px;
+    }
+
+    .panel {
+      margin-top: 28px;
+      padding: 28px;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow: 0 18px 40px var(--shadow);
+    }
+
+    .dice-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      align-items: center;
+    }
+
+    .dice-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      border-radius: 16px;
+      background: var(--dice-face);
+      box-shadow: inset 0 0 0 1px var(--surface-outline);
+    }
+
+    .dice {
+      width: 130px;
+      height: 130px;
+      border-radius: 18px;
+      background: var(--dice);
+      box-shadow:
+        0 8px 16px rgba(30, 27, 22, 0.18),
+        inset 0 0 0 2px rgba(30, 27, 22, 0.1);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px;
+      transform-origin: center;
+    }
+
+    .pip {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--pip);
+      align-self: center;
+      justify-self: center;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .dice[data-value="1"] .pip:nth-child(5),
+    .dice[data-value="2"] .pip:nth-child(1),
+    .dice[data-value="2"] .pip:nth-child(9),
+    .dice[data-value="3"] .pip:nth-child(1),
+    .dice[data-value="3"] .pip:nth-child(5),
+    .dice[data-value="3"] .pip:nth-child(9),
+    .dice[data-value="4"] .pip:nth-child(1),
+    .dice[data-value="4"] .pip:nth-child(3),
+    .dice[data-value="4"] .pip:nth-child(7),
+    .dice[data-value="4"] .pip:nth-child(9),
+    .dice[data-value="5"] .pip:nth-child(1),
+    .dice[data-value="5"] .pip:nth-child(3),
+    .dice[data-value="5"] .pip:nth-child(5),
+    .dice[data-value="5"] .pip:nth-child(7),
+    .dice[data-value="5"] .pip:nth-child(9),
+    .dice[data-value="6"] .pip:nth-child(1),
+    .dice[data-value="6"] .pip:nth-child(3),
+    .dice[data-value="6"] .pip:nth-child(4),
+    .dice[data-value="6"] .pip:nth-child(6),
+    .dice[data-value="6"] .pip:nth-child(7),
+    .dice[data-value="6"] .pip:nth-child(9) {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .dice.rolling {
+      animation: tumble 0.7s ease-in-out infinite;
+      box-shadow:
+        0 20px 40px rgba(30, 27, 22, 0.24),
+        inset 0 0 0 2px rgba(30, 27, 22, 0.12);
+    }
+
+    @keyframes tumble {
+      0% {
+        transform: rotate(0deg) translateY(0);
+      }
+      35% {
+        transform: rotate(18deg) translateY(-10px);
+      }
+      70% {
+        transform: rotate(-22deg) translateY(6px);
+      }
+      100% {
+        transform: rotate(0deg) translateY(0);
+      }
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px 22px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      box-shadow: 0 12px 20px rgba(244, 89, 157, 0.35);
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 16px 26px rgba(244, 89, 157, 0.4);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.75;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .button-secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--surface-outline);
+      box-shadow: none;
+    }
+
+    .button-secondary:hover {
+      background: var(--history);
+      box-shadow: none;
+    }
+
+    .icon-button {
+      padding: 12px;
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon {
+      width: 22px;
+      height: 22px;
+      display: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      fill: none;
+    }
+
+    .icon-button[data-theme="light"] .icon-moon,
+    .icon-button[data-theme="dark"] .icon-sun {
+      display: block;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .result {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .result span {
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    .history {
+      margin-top: 24px;
+      padding: 20px 22px;
+      background: var(--dice-face);
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px var(--surface-outline);
+    }
+
+    .history h2 {
+      font-size: 1.1rem;
+      margin: 0 0 12px 0;
+    }
+
+    .history ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .history li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--history);
+      border-radius: 12px;
+      font-size: 0.95rem;
+    }
+
+    .history .empty {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .history-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .dice {
+        width: 110px;
+        height: 110px;
+      }
+
+      .controls {
+        align-items: stretch;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body class="noto-sans-regular">
+  <main>
+    <header>
+      <div>
+        <h1>Dice Roller</h1>
+        <p>Roll two six-sided dice and keep your latest results in Local Storage.</p>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="button-secondary icon-button" type="button" aria-label="Switch to dark mode">
+          <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 14.5a8.5 8.5 0 1 1-11.5-11 9 9 0 1 0 11.5 11z"></path>
+          </svg>
+          <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.5"></circle>
+            <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.3 4.3l1.8 1.8M17.9 17.9l1.8 1.8M4.3 19.7l1.8-1.8M17.9 6.1l1.8-1.8"></path>
+          </svg>
+          <span class="sr-only">Toggle theme</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="dice-row">
+        <div class="dice-wrap">
+          <div class="dice" id="die-one" data-value="1" aria-label="Die one showing 1">
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+          </div>
+        </div>
+        <div class="dice-wrap">
+          <div class="dice" id="die-two" data-value="1" aria-label="Die two showing 1">
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+            <span class="pip"></span>
+          </div>
+        </div>
+        <div class="controls">
+          <button id="roll-btn" type="button">Roll</button>
+          <div class="result" id="result-text">Total: <span>2</span></div>
+        </div>
+      </div>
+
+      <div class="history">
+        <h2>Recent rolls</h2>
+        <div class="empty" id="history-empty">No rolls yet. Give it a go.</div>
+        <ul id="history-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rollButton = document.getElementById("roll-btn");
+    const themeToggle = document.getElementById("theme-toggle");
+    const dieOne = document.getElementById("die-one");
+    const dieTwo = document.getElementById("die-two");
+    const resultText = document.getElementById("result-text");
+    const historyList = document.getElementById("history-list");
+    const historyEmpty = document.getElementById("history-empty");
+
+    const themeKey = "dice-roller-theme";
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+    const historyKey = "dice-roller-history";
+    const history = [];
+    const maxHistory = 8;
+
+    const getEffectiveTheme = () => {
+      if (root.dataset.theme === "light" || root.dataset.theme === "dark") {
+        return root.dataset.theme;
+      }
+      return prefersDark.matches ? "dark" : "light";
+    };
+
+    const updateThemeLabel = () => {
+      const current = getEffectiveTheme();
+      const label = current === "dark" ? "Switch to light mode" : "Switch to dark mode";
+      themeToggle.setAttribute("aria-label", label);
+      themeToggle.dataset.theme = current;
+    };
+
+    const applyThemePreference = (theme) => {
+      if (theme === "light" || theme === "dark") {
+        root.dataset.theme = theme;
+        localStorage.setItem(themeKey, theme);
+      } else {
+        delete root.dataset.theme;
+        localStorage.removeItem(themeKey);
+      }
+      updateThemeLabel();
+    };
+
+    const loadHistory = () => {
+      try {
+        const raw = localStorage.getItem(historyKey);
+        if (!raw) {
+          return;
+        }
+        const stored = JSON.parse(raw);
+        if (Array.isArray(stored)) {
+          stored.slice(0, maxHistory).forEach((entry) => {
+            if (entry && Number.isInteger(entry.one) && Number.isInteger(entry.two)) {
+              history.push({
+                one: entry.one,
+                two: entry.two,
+                total: entry.one + entry.two,
+                time: entry.time || "—"
+              });
+            }
+          });
+        }
+        if (history.length > 0) {
+          const latest = history[0];
+          setDieValue(dieOne, latest.one, "Die one");
+          setDieValue(dieTwo, latest.two, "Die two");
+          updateResult(latest.one, latest.two);
+        }
+      } catch (error) {
+        localStorage.removeItem(historyKey);
+      }
+    };
+
+    const loadThemePreference = () => {
+      const stored = localStorage.getItem(themeKey);
+      if (stored === "light" || stored === "dark") {
+        applyThemePreference(stored);
+      } else {
+        applyThemePreference(null);
+      }
+    };
+
+    const saveHistory = () => {
+      const payload = history.map((entry) => ({
+        one: entry.one,
+        two: entry.two,
+        time: entry.time
+      }));
+      localStorage.setItem(historyKey, JSON.stringify(payload));
+    };
+
+    const setDieValue = (die, value, label) => {
+      die.dataset.value = value;
+      die.setAttribute("aria-label", `${label} showing ${value}`);
+    };
+
+    const updateResult = (one, two) => {
+      resultText.innerHTML = `Total: <span>${one + two}</span>`;
+    };
+
+    const renderHistory = () => {
+      historyList.innerHTML = "";
+      if (history.length === 0) {
+        historyEmpty.style.display = "block";
+        return;
+      }
+
+      historyEmpty.style.display = "none";
+      history.forEach((entry, index) => {
+        const li = document.createElement("li");
+        const summaryWrap = document.createElement("span");
+        summaryWrap.className = "history-summary";
+
+        const move = document.createElement("span");
+        move.textContent = `#${history.length - index}`;
+        move.style.color = "var(--muted)";
+        move.style.fontSize = "0.85rem";
+
+        const summary = document.createElement("span");
+        summary.textContent = `${entry.one} + ${entry.two} = ${entry.total}`;
+
+        summaryWrap.appendChild(move);
+        summaryWrap.appendChild(summary);
+        li.appendChild(summaryWrap);
+        const time = document.createElement("span");
+        time.textContent = entry.time;
+        time.style.color = "var(--muted)";
+        time.style.fontSize = "0.85rem";
+        li.appendChild(time);
+        historyList.appendChild(li);
+      });
+    };
+
+    const randomDie = () => Math.floor(Math.random() * 6) + 1;
+
+    const rollDice = () => {
+      rollButton.disabled = true;
+      dieOne.classList.add("rolling");
+      dieTwo.classList.add("rolling");
+
+      const start = performance.now();
+      const rollDuration = 900;
+      const interval = setInterval(() => {
+        setDieValue(dieOne, randomDie(), "Die one");
+        setDieValue(dieTwo, randomDie(), "Die two");
+      }, 60);
+
+      const finish = () => {
+        clearInterval(interval);
+        const one = randomDie();
+        const two = randomDie();
+        setDieValue(dieOne, one, "Die one");
+        setDieValue(dieTwo, two, "Die two");
+        dieOne.classList.remove("rolling");
+        dieTwo.classList.remove("rolling");
+        updateResult(one, two);
+
+        const entry = {
+          one,
+          two,
+          total: one + two,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        history.unshift(entry);
+        if (history.length > maxHistory) {
+          history.pop();
+        }
+        renderHistory();
+        saveHistory();
+        rollButton.disabled = false;
+      };
+
+      const tick = (now) => {
+        if (now - start >= rollDuration) {
+          finish();
+        } else {
+          requestAnimationFrame(tick);
+        }
+      };
+
+      requestAnimationFrame(tick);
+    };
+
+    themeToggle.addEventListener("click", () => {
+      const next = getEffectiveTheme() === "dark" ? "light" : "dark";
+      applyThemePreference(next);
+    });
+
+    prefersDark.addEventListener("change", () => {
+      if (!root.dataset.theme) {
+        updateThemeLabel();
+      }
+    });
+
+    rollButton.addEventListener("click", rollDice);
+    updateResult(1, 1);
+    loadThemePreference();
+    loadHistory();
+    renderHistory();
+  </script>
+</body>
+</html>
